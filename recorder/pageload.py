@@ -68,9 +68,9 @@ def load(url, output, timeout):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("url")
-    parser.add_argument("--output", default=os.path.join(os.getcwd(), "output"))
+    parser.add_argument("--dep-output", default=os.path.join(os.getcwd(), "output"))
     parser.add_argument("--timeout", "-t", default=30)
 
     args = parser.parse_args()
 
-    load(args.url, args.output, args.timeout)
+    load(args.url, args.dep_output, args.timeout)
