@@ -1,1 +1,3 @@
-recd/target
+recd/target/
+logs/
+.venv/

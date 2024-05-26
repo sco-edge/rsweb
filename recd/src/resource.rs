@@ -289,8 +289,8 @@ pub fn parse_transactions_path(path: &Path) -> Result<Vec<Transaction>, Error> {
 
 #[derive(Clone)]
 pub struct Transaction {
-    request: H3Request,
-    response: H3Response,
+    pub request: H3Request,
+    pub response: H3Response,
 }
 
 impl Transaction {
