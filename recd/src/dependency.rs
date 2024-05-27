@@ -236,7 +236,7 @@ impl Dependency {
     /// Generate a discovery graph from a simple graph without algo::all_simple_paths()
     pub fn deadlines(&self)
         -> HashMap<usize, Duration> {
-        print!("  deadlines(): ");
+        // print!("  deadlines(): ");
 
         // Deadlines to return
         let mut deadlines = HashMap::new();
@@ -246,6 +246,8 @@ impl Dependency {
 
         // Find root nodes
         let root_indices = self.root_indices();
+
+        println!("root indices: {:?}", root_indices);
 
         for root_index in root_indices {
             im.insert(root_index, Duration::new(0, 0));
@@ -327,7 +329,7 @@ impl Dependency {
             deadlines.insert(object_id, *deadline);
         }
 
-        println!("done.");
+        // println!("done.");
 
         // for (k, v) in &deadlines {
         //     let fnx = self.node_index(*k).unwrap();
@@ -954,6 +956,22 @@ impl Dependency {
 
         estimated
     }
+}
+
+pub fn compare_dependencies(d1: &Dependency, d2: &Dependency) -> Result<bool, Error> {
+    let roots1 = d1.root_indices();
+    let roots2 = d2.root_indices();
+
+    // Step 1: If root indices are different, return false
+    if roots1 != roots2 {
+        return Ok(false);
+    }
+
+    for root1 in roots1 {
+        
+    }
+
+    Ok(true)
 }
 
 /// Parse a single web object. For example,
