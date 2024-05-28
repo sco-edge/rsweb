@@ -55,4 +55,5 @@ mod tests {
 pub mod activity;
 pub mod dependency;
 pub mod resource;
+pub mod differences;
 pub mod mahimahi;

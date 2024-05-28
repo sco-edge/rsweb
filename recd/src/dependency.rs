@@ -208,7 +208,7 @@ impl Dependency {
         let mut trans = HashMap::new();
         let mut adj_map = HashMap::new();
 
-        print!("  simplified_graph(): ");
+        // print!("  simplified_graph(): ");
         let net_ids = self.net_activities();
     
         for net_id in &net_ids {
@@ -247,7 +247,7 @@ impl Dependency {
         // Find root nodes
         let root_indices = self.root_indices();
 
-        println!("root indices: {:?}", root_indices);
+        // println!("root indices: {:?}", root_indices);
 
         for root_index in root_indices {
             im.insert(root_index, Duration::new(0, 0));
@@ -958,21 +958,6 @@ impl Dependency {
     }
 }
 
-pub fn compare_dependencies(d1: &Dependency, d2: &Dependency) -> Result<bool, Error> {
-    let roots1 = d1.root_indices();
-    let roots2 = d2.root_indices();
-
-    // Step 1: If root indices are different, return false
-    if roots1 != roots2 {
-        return Ok(false);
-    }
-
-    for root1 in roots1 {
-        
-    }
-
-    Ok(true)
-}
 
 /// Parse a single web object. For example,
 ///
@@ -1036,6 +1021,7 @@ fn node_index_by_label(g: &Graph<Activity, f32>, label: &str) -> Option<NodeInde
     g.node_indices()
         .find(|i| format!("{}", g[*i].label) == label)
 }
+
 
 #[cfg(test)]
 mod test {

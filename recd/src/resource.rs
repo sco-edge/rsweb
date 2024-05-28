@@ -173,7 +173,7 @@ impl Resources {
         Some(max_match)
     }
 
-    fn split_query(path_and_query: &str) -> (String, Option<String>) {
+    pub fn split_query(path_and_query: &str) -> (String, Option<String>) {
         let split = path_and_query.split("?").collect::<Vec<&str>>();
         if split.len() == 0 {
             panic!("split failed.");
