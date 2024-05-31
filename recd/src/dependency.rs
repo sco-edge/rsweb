@@ -234,8 +234,8 @@ impl Dependency {
     }
 
     /// Generate a discovery graph from a simple graph without algo::all_simple_paths()
-    pub fn deadlines(&self)
-        -> HashMap<usize, Duration> {
+    pub fn deadlines(&self, rtt: usize)
+        -> (HashMap<usize, Duration>, Duration) {
         // print!("  deadlines(): ");
 
         // Deadlines to return
@@ -262,7 +262,7 @@ impl Dependency {
                         let next = self.graph.node_weight(*next_index).unwrap();
                         let new_deadline = if let ActivityType::Networking(_) = next.activity_type {
                             // If all resources are cached, the time to fetch the resource is zero
-                            current
+                            current + Duration::from_millis(rtt as u64)
                         } else {
                             current + next.duration
                         };
@@ -329,6 +329,16 @@ impl Dependency {
             deadlines.insert(object_id, *deadline);
         }
 
+        let (last_index, last_deadline) = im.iter()
+        .max_by_key(|(_, &value)| value)
+        .map(|(&key, &value)| (key, value)).unwrap();
+
+        let activity = self.graph.node_weight(last_index).unwrap();
+        let plt = match activity.activity_type {
+            ActivityType::Networking(_) => last_deadline,
+            _ => last_deadline + activity.duration,
+        };
+
         // println!("done.");
 
         // for (k, v) in &deadlines {
@@ -336,7 +346,7 @@ impl Dependency {
         //     let n = self.graph.node_weight(fnx).unwrap();
         //     println!("{}: {:?}", n.url, v);
         // }
-        deadlines
+        (deadlines, plt)
     }
 
     pub fn root_indices(&self) -> Vec<NodeIndex> {
@@ -958,6 +968,48 @@ impl Dependency {
     }
 }
 
+pub fn compare_parents(d1: &Dependency, d2: &Dependency, id1: usize, id2: usize) -> bool {
+    let mut id1_parents: Vec<_> = d1.parents(id1).into_iter().map(|x| Some(x)).collect();
+    let mut id2_parents: Vec<_> = d2.parents(id2).into_iter().map(|x| Some(x)).collect();
+
+    if id1_parents.len() != id2_parents.len() {
+        return false;
+    }
+
+    for i in 0..id1_parents.len() {
+        for j in 0..id2_parents.len() {
+            if let Some(v1) = id1_parents[i] {
+                if let Some(v2) = id2_parents[j] {
+                    if d1.activity(v1).unwrap().url == d2.activity(v2).unwrap().url {
+                        id1_parents[i] = None;
+                        id2_parents[j] = None;
+                        // println!("matched: {}", d1.activity(v1).unwrap().url);
+                    }
+                } else {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+    }
+
+    for i in 0..id1_parents.len() {
+        for j in 0..id2_parents.len() {
+            if let Some(_) = id1_parents[i] {
+                if let Some(_) = id2_parents[j] {
+                    return false;
+                } else {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+    }
+
+    true
+}
 
 /// Parse a single web object. For example,
 ///
