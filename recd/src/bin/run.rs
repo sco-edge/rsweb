@@ -2,6 +2,7 @@ use recd;
 use std;
 use std::time::Duration;
 use std::fs::File;
+use std::path::PathBuf;
 use std::io::{BufRead, BufReader};
 use std::thread;
 use std::sync::mpsc;
@@ -23,17 +24,27 @@ struct Args {
     #[arg(short, long, default_value_t=10)]
     timeout: usize,
 }
-
 fn rr_summary(target: &str) -> Vec<Duration> {
-    let p1 = std::path::PathBuf::from(format!("/home/sunj/traces/traces-1/{}/run-0", target));
-    let d1 = recd::dependency::Dependency::new(p1.join(format!("{}.json", target)).as_ref()).unwrap();
+    let traces = PathBuf::from("/home/sunj/traces/traces-local");
+    if let Some(v) = recd::identify::identify_rrs(target, &traces) {
+        v
+    } else {
+        Vec::new()
+    }
+}
+
+fn rr_summary_two(target: &str) -> Vec<Duration> {
+    let p1 = PathBuf::from(format!("/home/sunj/traces/traces-local/{}/run-0", target));
+    let d1 = recd::dependency::Dependency::new(p1.join(format!("{}.j
+    
+    son", target)).as_ref()).unwrap();
     let r1 = recd::resource::Resources::new(p1.as_ref(), &d1).unwrap();
 
-    let p2 = std::path::PathBuf::from(format!("/home/sunj/traces/traces-2/{}/run-0", target));
+    let p2 = PathBuf::from(format!("/home/sunj/traces/traces-local/{}/run-0", target));
     let d2 = recd::dependency::Dependency::new(p2.join(format!("{}.json", target)).as_ref()).unwrap();
     let r2 = recd::resource::Resources::new(p2.as_ref(), &d2).unwrap();
 
-    let rr_tuples = recd::differences::compare_dependencies(&d1, &r1, &d2, &r2).unwrap();
+    let rr_tuples = recd::identify::compare_dependencies(&d1, &r1, &d2, &r2).unwrap();
     let rrs: Vec<usize> = rr_tuples.iter().map(|(a, _)| *a).collect::<std::collections::HashSet<_>>().into_iter().collect();
 
     // println!("{:?}", rrs);
