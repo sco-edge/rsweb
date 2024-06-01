@@ -26,12 +26,15 @@ struct Args {
 
     #[arg(short, long, default_value_t=0)]
     rtt: usize,
+    
+    #[arg(long)]
+    lateness: Option<isize>,
 }
 
-fn rr_summary(target: &str, rtt: usize) -> Result<(Vec<Duration>, Duration, Vec<usize>), recd::Error> {
+fn rr_summary(target: &str, rtt: usize, lateness: Option<isize>) -> Result<(Vec<Duration>, Duration, Vec<usize>, Duration), recd::Error> {
     let traces = PathBuf::from("/home/sunj/traces/traces-local");
-    if let Some((v, plt, leaves)) = recd::identify::identify_rrs(target, &traces, rtt) {
-        Ok((v, plt, leaves))
+    if let Some((v, plt, leaves, delayed)) = recd::identify::identify_rrs(target, &traces, rtt, lateness) {
+        Ok((v, plt, leaves, delayed))
     } else {
         Err(recd::Error::Json)
     }
@@ -70,16 +73,16 @@ fn rr_summary(target: &str, rtt: usize) -> Result<(Vec<Duration>, Duration, Vec<
 //     rr_deadlines
 // }
 
-fn measure_execution_time<F>(func: F, input: &str, rtt: usize, timeout_duration: Duration) -> Result<(Vec<Duration>, Duration, Vec<usize>), &'static str>
+fn measure_execution_time<F>(func: F, input: &str, rtt: usize, lateness: Option<isize>, timeout_duration: Duration) -> Result<(Vec<Duration>, Duration, Vec<usize>, Duration), &'static str>
 where
-    F: FnOnce(&str, usize) -> Result<(Vec<Duration>, Duration, Vec<usize>), recd::Error> + Send + 'static,
+    F: FnOnce(&str, usize, Option<isize>) -> Result<(Vec<Duration>, Duration, Vec<usize>, Duration), recd::Error> + Send + 'static,
 {
-    let (sender, receiver): (Sender<Result<(Vec<Duration>, Duration, Vec<usize>), &'static str>>, Receiver<Result<(Vec<Duration>, Duration, Vec<usize>), &'static str>>) = mpsc::channel();
+    let (sender, receiver): (Sender<Result<(Vec<Duration>, Duration, Vec<usize>, Duration), &'static str>>, Receiver<Result<(Vec<Duration>, Duration, Vec<usize>, Duration), &'static str>>) = mpsc::channel();
 
     let sender_clone = sender.clone();
     let input_string = input.to_string();
     thread::spawn(move || {
-        match func(&input_string, rtt) {
+        match func(&input_string, rtt, lateness) {
             Ok(v) => sender_clone.send(Ok(v)).unwrap(),
             Err(_) => sender_clone.send(Err("Failed parsing")).unwrap(),
         }
@@ -97,9 +100,10 @@ where
 fn main() {
     let args = Args::parse();
     let timeout = Duration::from_secs(args.timeout as u64);
+
     if !args.list {
-        match measure_execution_time(rr_summary, &args.target, args.rtt, timeout) {
-            Ok((res, plt, leaves)) => println!("{} {:?} ({}) {:?} {:?}", args.target, plt, res.len(), res, leaves),
+        match measure_execution_time(rr_summary, &args.target, args.rtt, args.lateness, timeout) {
+            Ok((res, plt, leaves, delayed)) => println!("{} {:?} {:?} ({}) {:?} {:?}", args.target, plt, delayed, res.len(), res, leaves),
             Err(_) => println!("{} failed", args.target),
         } 
     } else {
@@ -117,8 +121,8 @@ fn main() {
         for line in reader.lines() {
             match line {
                 Ok(line) => {
-                    match measure_execution_time(rr_summary, &line, args.rtt, timeout) {
-                        Ok((res, plt, leaves)) => println!("{} {:?} ({}) {:?} {:?}", line, plt, res.len(), res, leaves),
+                    match measure_execution_time(rr_summary, &line, args.rtt, args.lateness, timeout) {
+                        Ok((res, plt, leaves, delayed)) => println!("{} {:?} {:?} ({}) {:?} {:?}", line, plt, delayed, res.len(), res, leaves),
                         Err(_) => println!("{} failed", line),
                     } 
                 }

@@ -2,3 +2,4 @@ recd/target/
 recd/Cargo.lock
 logs/
 .venv/
+output/

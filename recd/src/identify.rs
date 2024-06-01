@@ -12,7 +12,7 @@ use petgraph::Direction;
 use url;
 use url::Url;
 
-pub fn identify_rrs(target: &str, traces: &PathBuf, rtt: usize) -> Option<(Vec<Duration>, Duration, Vec<usize>)> {
+pub fn identify_rrs(target: &str, traces: &PathBuf, rtt: usize, lateness: Option<isize>) -> Option<(Vec<Duration>, Duration, Vec<usize>, Duration)> {
     let mut rrs = Vec::new();
     let mut leaf_indices = Vec::new();
     let primary_p = traces.join(target).join("run-0");
@@ -212,7 +212,7 @@ pub fn identify_rrs(target: &str, traces: &PathBuf, rtt: usize) -> Option<(Vec<D
                         }
                     }
                     if let Some(secondary_i) = similar_index {
-                        let indexx = secondary_ids.get(secondary_reachables[secondary_i].unwrap()).unwrap();
+                        // let indexx = secondary_ids.get(secondary_reachables[secondary_i].unwrap()).unwrap();
                         // println!("rr matched:  {}", secondary_d.activity(*indexx).unwrap().url);
                         rrs.push((*primary_id, i));
                         _ = std::mem::replace(&mut secondary_reachables[secondary_i], &None);
@@ -238,7 +238,7 @@ pub fn identify_rrs(target: &str, traces: &PathBuf, rtt: usize) -> Option<(Vec<D
                 // let s = primary_d.node_index(deadline.0).unwrap();
                 // let sn = primary_d.graph.node_weight(s).unwrap();
                 // println!("{}: {:?} {}", deadline.0, deadline.1, sn.url);
-                rr_deadlines.push(*deadline.1);
+                rr_deadlines.push((*deadline.0, *deadline.1));
             }
         }
     }
@@ -271,7 +271,20 @@ pub fn identify_rrs(target: &str, traces: &PathBuf, rtt: usize) -> Option<(Vec<D
     //     println!("{} {}", i, std::str::from_utf8(&primary_t.path().unwrap()).unwrap());
     // }
 
-    Some((rr_deadlines, plt, leaf_indices))
+        let delayed_plt = match lateness {
+            Some(v) => {
+                if rr_deadlines.len() == 0 {
+                    plt
+                } else {
+                    primary_d.delayed_load(rtt, &rr_deadlines, v)
+                }
+            },
+            None => plt,
+        };
+
+    let rr_deadlines = rr_deadlines.into_iter().map(|(_a, b)| b).collect();
+
+    Some((rr_deadlines, plt, leaf_indices, delayed_plt))
 
     // let result: Vec<usize> = rrs.iter()
     //     .filter(|(primary_id, secondary_t)| {

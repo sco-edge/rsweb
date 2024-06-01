@@ -9,4 +9,5 @@ with open("../radar-results.txt", "r") as file:
 
     for l in lines:
         tokens = l.rstrip().rsplit()
-        print(tokens[0])
+        if tokens[1] != "failed":
+            print(l, end="")

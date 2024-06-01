@@ -335,7 +335,7 @@ impl Dependency {
 
         let activity = self.graph.node_weight(last_index).unwrap();
         let plt = match activity.activity_type {
-            ActivityType::Networking(_) => last_deadline,
+            ActivityType::Networking(_) => last_deadline + Duration::from_millis(rtt as u64),
             _ => last_deadline + activity.duration,
         };
 
@@ -347,6 +347,117 @@ impl Dependency {
         //     println!("{}: {:?}", n.url, v);
         // }
         (deadlines, plt)
+    }
+
+    /// Generate a discovery graph from a simple graph without algo::all_simple_paths()
+    pub fn delayed_load(&self, rtt: usize, rrs: &Vec<(usize, Duration)>, level: isize) -> Duration {
+        // print!("  deadlines(): ");
+
+        let mut delayed_im = HashMap::new();
+        // for (id, deadline) in rrs {
+        //     let index = self.node_index(*id).unwrap();
+        //     if delay < 0 {
+        //         if *deadline <= Duration::from_millis(-delay as u64) {
+        //             delayed_im.insert(index, Duration::from_millis(0));
+        //         } else {
+        //             delayed_im.insert(index, *deadline - Duration::from_millis(-delay as u64));
+        //         }
+        //     } else {
+        //         delayed_im.insert(index, *deadline + Duration::from_millis(delay as u64));
+        //     }
+        // }
+        
+        // for (id, _deadline) in rrs {
+        //     let index = self.node_index(*id).unwrap();
+        //     delayed_im.insert(index, Duration::from_millis(delay as u64));
+        // }
+
+        let fixed_deadline = step_size(&rrs, level);
+        
+        for (id, _deadline) in rrs {
+            let index = self.node_index(*id).unwrap();
+            delayed_im.insert(index, fixed_deadline);
+        }
+
+        // for (k, v) in &delayed_im {
+        //     println!("{:?} {:?}", k, v);
+        // }
+
+        // Deadlines to return
+        let mut deadlines = HashMap::new();
+
+        // Mapping for NodeIndex and intermediate calcultions
+        let mut im = HashMap::new();
+
+        // Find root nodes
+        let root_indices = self.root_indices();
+
+        // println!("root indices: {:?}", root_indices);
+
+        for root_index in root_indices {
+            im.insert(root_index, Duration::new(0, 0));
+            let mut stack: Vec<NodeIndex> = vec![root_index];
+
+            while stack.len() > 0 {
+                let current_index = stack.pop().unwrap();
+                
+                if let Some(v) = delayed_im.get(&current_index) {
+                    if v > im.get(&current_index).unwrap() {
+                        im.insert(current_index, v.clone());
+                    }
+                };
+                let current = im.get(&current_index).unwrap().clone();
+
+                let mut nexts: Vec<NodeIndex> = self.graph
+                    .neighbors_directed(current_index, Direction::Outgoing)
+                    .filter(|next_index| {
+                        let next = self.graph.node_weight(*next_index).unwrap();
+                        let new_deadline = if let ActivityType::Networking(_) = next.activity_type {
+                            // If all resources are cached, the time to fetch the resource is zero
+                            current + Duration::from_millis(rtt as u64)
+                        } else {
+                            current + next.duration
+                        };
+
+                        match im.get(next_index) {
+                            Some(old_deadline) => {
+                                if new_deadline > *old_deadline {
+                                    im.insert(*next_index, new_deadline);
+                                    true
+                                } else {
+                                    // Discard it and prevent further calculation through this path
+                                    // The path with the greatest deadline is still in the stack.
+                                    false
+                                }
+                            },
+                            None => {
+                                im.insert(*next_index, new_deadline);
+                                true
+                            }
+                        }
+                    })
+                    .collect();
+                stack.append(&mut nexts);
+            }
+        }
+
+        for object_id in self.net_activities() {
+            let fnx = self.node_index(object_id).unwrap();
+            let deadline = im.get(&fnx).unwrap();
+            deadlines.insert(object_id, *deadline);
+        }
+
+        let (last_index, last_deadline) = im.iter()
+        .max_by_key(|(_, &value)| value)
+        .map(|(&key, &value)| (key, value)).unwrap();
+
+        let activity = self.graph.node_weight(last_index).unwrap();
+        let plt = match activity.activity_type {
+            ActivityType::Networking(_) => last_deadline + Duration::from_millis(rtt as u64),
+            _ => last_deadline + activity.duration,
+        };
+
+        plt
     }
 
     pub fn root_indices(&self) -> Vec<NodeIndex> {
@@ -1072,6 +1183,34 @@ fn parse_dependency(dependency: &Value) -> Option<Vec<(f32, String, String)>> {
 fn node_index_by_label(g: &Graph<Activity, f32>, label: &str) -> Option<NodeIndex> {
     g.node_indices()
         .find(|i| format!("{}", g[*i].label) == label)
+}
+
+fn step_size(rrs: &Vec<(usize, Duration)>, level: isize) -> Duration {
+    let mut sum = Duration::from_millis(0);
+    for (_id, deadline) in rrs {
+        sum += *deadline;
+    }
+    let mean: Duration = sum / rrs.len() as u32;
+
+    let (_, max_deadline) = rrs.iter()
+    .max_by_key(|(_, value)| value).unwrap();
+
+    let (_, min_deadline) = rrs.iter()
+    .min_by_key(|(_, value)| value).unwrap();
+
+    let step_max = (*max_deadline - mean) / 2;
+    let step_mean = (mean - *min_deadline) / 2;
+
+    if level < 0 {
+        let abs_level = -level as u32;
+        if step_mean * abs_level > mean {
+            return Duration::from_millis(0);
+        } else {
+            return mean - abs_level * step_mean;
+        }
+    } else {
+        return mean + step_max * level as u32;
+    }
 }
 
 
