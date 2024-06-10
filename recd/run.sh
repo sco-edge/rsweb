@@ -1,30 +1,26 @@
 #!/bin/bash
 
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 0 --lateness=-3 | tee -a radar-results-sim-0-m3.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 0 --lateness=-2 | tee -a radar-results-sim-0-m2.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 0 --lateness=-1 | tee -a radar-results-sim-0-m1.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 0 --lateness=0 | tee -a radar-results-sim-0-0.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 0 --lateness=1 | tee -a radar-results-sim-0-p1.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 0 --lateness=2 | tee -a radar-results-sim-0-p2.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 0 --lateness=3 | tee -a radar-results-sim-0-p3.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 20 --lateness=-3 | tee -a radar-results-sim-20-m3.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 20 --lateness=-2 | tee -a radar-results-sim-20-m2.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 20 --lateness=-1 | tee -a radar-results-sim-20-m1.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 20 --lateness=0 | tee -a radar-results-sim-20-0.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 20 --lateness=1 | tee -a radar-results-sim-20-p1.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 20 --lateness=2 | tee -a radar-results-sim-20-p2.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 20 --lateness=3 | tee -a radar-results-sim-20-p3.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 40 --lateness=-3 | tee -a radar-results-sim-40-m3.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 40 --lateness=-2 | tee -a radar-results-sim-40-m2.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 40 --lateness=-1 | tee -a radar-results-sim-40-m1.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 40 --lateness=0 | tee -a radar-results-sim-40-0.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 40 --lateness=1 | tee -a radar-results-sim-40-p1.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 40 --lateness=2 | tee -a radar-results-sim-40-p2.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 40 --lateness=3 | tee -a radar-results-sim-40-p3.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 80 --lateness=-3 | tee -a radar-results-sim-80-m3.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 80 --lateness=-2 | tee -a radar-results-sim-80-m2.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 80 --lateness=-1 | tee -a radar-results-sim-80-m1.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 80 --lateness=0 | tee -a radar-results-sim-80-0.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 80 --lateness=1 | tee -a radar-results-sim-80-p1.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 80 --lateness=2 | tee -a radar-results-sim-80-p2.txt
-cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt 80 --lateness=3 | tee -a radar-results-sim-80-p3.txt
+# cargo run --bin deadline -- ../radar-passed-2.csv --list --lateness=-2 | tee -a radar-results-sim-ref-0-i.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=20 --lateness=-1 | tee -a radar-results-sim-ref-20-m.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=20 --lateness=0 | tee -a radar-results-sim-ref-20-0.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=20 --lateness=1 | tee -a radar-results-sim-ref-20-1.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=20 --lateness=2 | tee -a radar-results-sim-ref-20-2.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=20 --lateness=3 | tee -a radar-results-sim-ref-20-3.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=20 --lateness=4 | tee -a radar-results-sim-ref-20-4.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=20 --lateness=5 | tee -a radar-results-sim-ref-20-5.txt
+
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=40 --lateness=-1 | tee -a radar-results-sim-ref-40-m.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=40 --lateness=0 | tee -a radar-results-sim-ref-40-0.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=40 --lateness=1 | tee -a radar-results-sim-ref-40-1.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=40 --lateness=2 | tee -a radar-results-sim-ref-40-2.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=40 --lateness=3 | tee -a radar-results-sim-ref-40-3.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=40 --lateness=4 | tee -a radar-results-sim-ref-40-4.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=40 --lateness=5 | tee -a radar-results-sim-ref-40-5.txt
+
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=80 --lateness=-1 | tee -a radar-results-sim-ref-80-m.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=80 --lateness=0 | tee -a radar-results-sim-ref-80-0.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=80 --lateness=1 | tee -a radar-results-sim-ref-80-1.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=80 --lateness=2 | tee -a radar-results-sim-ref-80-2.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=80 --lateness=3 | tee -a radar-results-sim-ref-80-3.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=80 --lateness=4 | tee -a radar-results-sim-ref-80-4.txt
+cargo run --bin deadline -- ../radar-passed-2.csv --list --rtt=80 --lateness=5 | tee -a radar-results-sim-ref-80-5.txt

@@ -26,6 +26,8 @@ pub struct Dependency {
 
     indices_map: Vec<(usize, NodeIndex)>,
 
+    pub net_parents_map: HashMap<NodeIndex, Vec<usize>>,
+
     largest: f32,
 }
 
@@ -187,9 +189,10 @@ impl Dependency {
 
                     let dependency = Dependency {
                         graph,
+                        activity_count: activity_id,
                         raw,
                         indices_map,
-                        activity_count: activity_id,
+                        net_parents_map: HashMap::new(),                        
                         largest,
                     };
 
@@ -202,7 +205,7 @@ impl Dependency {
         }
     }
 
-    pub fn simplified_graph(&self) -> (StableGraph<Activity, f32>, HashMap::<NodeIndex, usize>) {
+    pub fn simplified_graph(&mut self) -> (StableGraph<Activity, f32>, HashMap::<NodeIndex, usize>) {
         let mut simple_graph = StableGraph::new();
         let mut ids = HashMap::new();
         let mut trans = HashMap::new();
@@ -216,6 +219,13 @@ impl Dependency {
             let net = self.activity(*net_id).unwrap();
             let nx = simple_graph.add_node(net.clone());
             let adj_onxs = Dependency::find_adjacent_networkings(&self.graph, onx);
+            for adj in &adj_onxs {                
+                if let Some(v) = self.net_parents_map.get_mut(adj) {
+                    v.push(*net_id);
+                } else {
+                    self.net_parents_map.insert(*adj, vec![*net_id]);
+                }
+            }
             adj_map.insert(nx, adj_onxs);
             trans.insert(onx, nx);
             ids.insert(nx, *net_id);
@@ -372,12 +382,19 @@ impl Dependency {
         //     delayed_im.insert(index, Duration::from_millis(delay as u64));
         // }
 
-        let fixed_deadline = step_size(&rrs, level);
+        // let fixed_deadline = step_size(&rrs, level);
+        let fixed_deadline = step_size2(&rrs, level);
         
-        for (id, _deadline) in rrs {
-            let index = self.node_index(*id).unwrap();
-            delayed_im.insert(index, fixed_deadline);
+        for (id, deadline) in rrs {
+            if level == -2 {
+                let index = self.node_index(*id).unwrap();
+                delayed_im.insert(index, *deadline);
+            } else {
+                let index = self.node_index(*id).unwrap();
+                delayed_im.insert(index, fixed_deadline);
+            }
         }
+        // println!("deadline: {:?}", fixed_deadline);
 
         // for (k, v) in &delayed_im {
         //     println!("{:?} {:?}", k, v);
@@ -901,7 +918,7 @@ impl Dependency {
         (rsg, rids)
     }
 
-    fn find_adjacent_networkings(g: &Graph<Activity, f32>, nx: NodeIndex) -> Vec<NodeIndex> {
+    pub fn find_adjacent_networkings(g: &Graph<Activity, f32>, nx: NodeIndex) -> Vec<NodeIndex> {
         let mut adjacents = Vec::new();
     
         let mut nexts = vec![nx];
@@ -1213,6 +1230,21 @@ fn step_size(rrs: &Vec<(usize, Duration)>, level: isize) -> Duration {
     }
 }
 
+fn step_size2(rrs: &Vec<(usize, Duration)>, level: isize) -> Duration {
+    if level == -1 {
+        return rrs[rrs.len() / 2 as usize].1;
+    }
+
+    let (_, max_deadline) = rrs.iter()
+    .max_by_key(|(_, value)| value).unwrap();
+
+    let (_, min_deadline) = rrs.iter()
+    .min_by_key(|(_, value)| value).unwrap();
+
+    let step_size = (*max_deadline - *min_deadline) / 5;
+
+    return *min_deadline + step_size * level as u32;
+}
 
 #[cfg(test)]
 mod test {
@@ -1267,6 +1299,7 @@ mod test {
             activity_count: 10,
             raw,
             indices_map,
+            net_parents_map: HashMap::new(),
             largest: 0.0,
         }
     }

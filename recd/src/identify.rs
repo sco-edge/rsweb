@@ -21,7 +21,7 @@ pub fn identify_rrs(target: &str, traces: &PathBuf, rtt: usize, lateness: Option
         return None;
     }
 
-    let primary_d = Dependency::new(primary_p.join(format!("{}.json", target)).as_ref()).unwrap();
+    let mut primary_d = Dependency::new(primary_p.join(format!("{}.json", target)).as_ref()).unwrap();
     let primary_r = Resources::new(primary_p.as_ref(), &primary_d).unwrap();
     let (primary_sg, primary_ids) = primary_d.simplified_graph();
 
@@ -75,7 +75,7 @@ pub fn identify_rrs(target: &str, traces: &PathBuf, rtt: usize, lateness: Option
             continue;
         }
 
-        let secondary_d = Dependency::new(secondary_p.join(format!("{}.json", target)).as_ref()).unwrap();
+        let mut secondary_d = Dependency::new(secondary_p.join(format!("{}.json", target)).as_ref()).unwrap();
         let secondary_r = Resources::new(secondary_p.as_ref(), &secondary_d).unwrap();
         let (secondary_sg, secondary_ids) = secondary_d.simplified_graph();
     
@@ -135,9 +135,14 @@ pub fn identify_rrs(target: &str, traces: &PathBuf, rtt: usize, lateness: Option
                     let primary_id = primary_ids.get(primary_index).unwrap();
                     let primary_t = primary_r.get(primary_id).unwrap();
 
-                    if rrs.iter().any(|&(x, _)| x == *primary_id) {
-                        continue;
-                    }
+
+                    // [sunj] Original
+                    // if rrs.iter().any(|&(x, _)| x == *primary_id) {
+                    //     continue;
+                    // }
+
+                    // [sunj] Reference of RR
+                    
 
                     // Static match
                     for secondary_index_wrapped in &mut secondary_reachables {
@@ -227,11 +232,31 @@ pub fn identify_rrs(target: &str, traces: &PathBuf, rtt: usize, lateness: Option
     //     println!("{} {}", i, std::str::from_utf8(&primary_t.path().unwrap()).unwrap());
     // }
 
-    let rrs: Vec<usize> = rrs.iter().map(|(a, _b)| *a).collect();
+
+    // [sunj] Original
+    // let rrs: Vec<usize> = rrs.iter().map(|(a, _b)| *a).collect();
+    // let mut rr_deadlines = Vec::new();
+    // let (deadlines, plt) = primary_d.deadlines(rtt);
+    // for deadline in &deadlines {
+    //     if rrs.contains(&deadline.0) {
+    //         if *deadline.1 != std::time::Duration::new(0, 0) {    
+    //             // let s = primary_d.node_index(deadline.0).unwrap();
+    //             // let sn = primary_d.graph.node_weight(s).unwrap();
+    //             // println!("{}: {:?} {}", deadline.0, deadline.1, sn.url);
+    //             rr_deadlines.push((*deadline.0, *deadline.1));
+    //         }
+    //     }
+    // }
+
+    // [sunj] Reference of RR
+    let (deadlines, plt) = primary_d.deadlines(rtt);
+    let rrs: Vec<usize> = rrs.iter().map(|(a, _b)| {
+        let parents = primary_d.net_parents_map.get(&primary_d.node_index(*a).unwrap()).unwrap();
+        let longest = parents.iter().max_by_key(|p| deadlines.get(&p)).unwrap();
+        *longest        
+    }).collect();
 
     let mut rr_deadlines = Vec::new();
-
-    let (deadlines, plt) = primary_d.deadlines(rtt);
     for deadline in &deadlines {
         if rrs.contains(&deadline.0) {
             if *deadline.1 != std::time::Duration::new(0, 0) {    
@@ -302,7 +327,7 @@ pub fn identify_rrs(target: &str, traces: &PathBuf, rtt: usize, lateness: Option
     // Some(rrs)
 }
 
-pub fn compare_dependencies(d1: &Dependency, r1: &Resources, d2: &Dependency, r2: &Resources) -> Option<Vec<(usize, usize)>> {
+pub fn compare_dependencies(d1: &mut Dependency, r1: &Resources, d2: &mut Dependency, r2: &Resources) -> Option<Vec<(usize, usize)>> {
     let mut rrs = Vec::<(usize, usize)>::new();
 
     // let roots1 = d1.root_indices();
