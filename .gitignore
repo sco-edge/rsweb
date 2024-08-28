@@ -3,3 +3,4 @@ recd/Cargo.lock
 logs/
 .venv/
 output/
+node_modules/
