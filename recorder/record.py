@@ -1,24 +1,25 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 import os
 import sys
 import time
 import subprocess
 import argparse
-import pageload
+import id
 
-def load_single(url):
+def load(url, output):
     output_for_url = os.path.join(args.output, url)
     if not os.path.exists(output_for_url):
         os.makedirs(output_for_url)
 
-    trial = f"run-0"
-    while os.path.exists(os.path.join(output_for_url, trial)):
-        (_, number) = trial.rsplit("-", 1)
-        trial = f"run-{int(number) + 1}"
-    output_trial = os.path.abspath(os.path.join(output_for_url, trial))
+    # trial = f"run-0"
+    # while os.path.exists(os.path.join(output_for_url, trial)):
+    #     (_, number) = trial.rsplit("-", 1)
+    #     trial = f"run-{int(number) + 1}"
+    # output_trial = os.path.abspath(os.path.join(output_for_url, trial))
     
-    commands = ["mm-webrecord-h3", output_trial, "./pageload.py", url,
-                "--dep-output", output_trial, "--timeout", str(args.timeout)]
+    commands = ["mm-webrecord", output_for_url, "chrome/linux-128.0.6613.84/chrome-linux64/chrome",
+                "--disable-fre", "--no-default-browser-check", "--no-first-run", "--window-size=1920,1080",
+                "--ignore-certificate-errors", "--user-data-dir=/tmp/nonexistent$(date +%s%N)", url]
     p = subprocess.Popen(commands, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         out, err = p.communicate(timeout=args.timeout)
@@ -35,27 +36,27 @@ def load_single(url):
 
         return 2
 
-    if os.path.exists(os.path.join(output_trial, f"{url}.json")):
+    if os.path.exists(os.path.join(output_for_url, f"{url}.json")):
         return 0
     else:
         return 1
     
 if __name__ == "__main__":
-    global cwd
-    cwd = os.getcwd()
-    
     parser = argparse.ArgumentParser()
     parser.add_argument("target")
     parser.add_argument("--list", "-l", action='store_true')
-    parser.add_argument("--output", default=os.path.join(cwd, "..", "traces"))
+    parser.add_argument("--output", default='traces')
     parser.add_argument("--timeout", "-t", default=20)
 
     global args
     args = parser.parse_args()
 
+    global cwd
+    cwd = os.getcwd()
+
     if not args.list:
         print(args.target, end=" ")
-        print(load_single(args.target))
+        print(load(args.target, args.output))
     else:
         with open(args.target) as file:
             lines = file.readlines()
