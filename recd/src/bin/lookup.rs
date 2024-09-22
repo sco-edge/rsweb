@@ -1,10 +1,8 @@
 use recd;
 use std;
-use std::io;
-use std::fs;
 use std::path::PathBuf;
-use std::io::{BufRead, BufReader};
 use std::str;
+use std::fs::File;
 
 use clap::Parser;
 
@@ -34,12 +32,9 @@ fn main() {
     let mut traces = PathBuf::from("/home/sunj/traweb/rsweb/recorder/traces");
     traces.push(args.target);
 
-    let transactions = recd::resource::parse_transactions_path(&traces).unwrap();
-
-    for transaction in &transactions {
-        if let Ok(v) = str::from_utf8(transaction.response().body()) {
-            println!("{}", v);
+    for trace in traces.read_dir().unwrap() {
+        if let Ok(trace) = trace {
+            recd::resource::read_trace(&trace.path());
         }
     }
-
 }

@@ -204,6 +204,52 @@ impl Resources {
     }
 }
 
+pub fn read_trace(trace: &Path) {
+    let mut file = File::open(trace).unwrap();
+    let content = mahimahi::RequestResponse::parse_from_reader(&mut file).unwrap();
+    
+    let request = content.get_request();
+    let request_first_line =
+        String::from_utf8_lossy(request.get_first_line()).into_owned();
+    let headers = request.get_header();
+    let mut host = None;
+    for header in headers {
+        let key = String::from_utf8_lossy(header.get_key()).into_owned();
+        let value = String::from_utf8_lossy(header.get_value()).into_owned();
+        if key == "Host" {
+            host = Some(value);
+        }
+    }
+    let request_items = request_first_line.split(' ').collect::<Vec<_>>();
+    // println!("{} {}{}", request_items[0], host.unwrap(), request_items[1]);
+
+    let response = content.get_response();
+    let response_first_line =
+    String::from_utf8_lossy(response.get_first_line()).into_owned();
+    let response_items = response_first_line.split(' ').collect::<Vec<_>>();
+    let status = response_items[1].parse::<usize>().unwrap();
+    let headers = response.get_header();
+    let mut encoding = None;
+    let mut content_type = None;
+    for header in headers {
+        let key = String::from_utf8_lossy(header.get_key()).into_owned();
+        let value = String::from_utf8_lossy(header.get_value()).into_owned();
+        if key.to_lowercase() == "content-encoding" {
+            encoding = Some(value);
+        } else if key.to_lowercase() == "content-type" {
+            content_type = Some(value);
+        }
+        println!("{}", key);
+    }
+    let body = Vec::from(response.get_body());
+
+    // match encoding {
+    //     Some(v) => println!("{} {} {}", status, v, body.len()),
+    //     None => println!("{} None {}", status, body.len()),
+    // }
+
+}
+
 /// Generate the resources from traces
 pub fn parse_transactions_path(path: &Path) -> Result<Vec<Transaction>, Error> {
     let mut transaction_list = Vec::new();
@@ -267,6 +313,7 @@ pub fn parse_transactions_path(path: &Path) -> Result<Vec<Transaction>, Error> {
             let status = response_items[1].parse::<usize>().unwrap();
 
             let mut header_list = Vec::new();
+            let headers = response.get_header();
             for header in headers {
                 let key = header.get_key();
                 let value = header.get_value();
