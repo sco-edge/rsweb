@@ -68,6 +68,7 @@ var cssUrl = {};
                         //   initiator = params.initiator.stack[0].url;
                         // console.log(parameters.initiator.stack);
                         initiator = parameters.initiator.stack.callFrames[0].url;
+                        console.log(parameters.initiator.stack.callFrames[0]);
                     }
                 } else if (parameters.initiator.type == 'parser') {
                     initiator = parameters.initiator.url;
@@ -146,7 +147,7 @@ var cssUrl = {};
 
     // page.on('console', (msg) => console[msg._type]('PAGE LOG:', msg._text));
 
-    await page.goto(url, { waitUntil: 'networkidle0' });
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
     await delay(1000);
 
     // console.log(cssUrl);
