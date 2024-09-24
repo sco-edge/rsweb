@@ -6,21 +6,45 @@ import subprocess
 import argparse
 import id
 
+def truncate_url(url, truncate_path):
+    start_index = url.find("://")
+    if start_index == -1:
+        if not truncate_path:
+            return url
+        end_index = url.find("/")
+        truncated_url = url[:end_index] if end_index > 0 else url
+    else:
+        if not truncate_path:
+            return url[start_index + 3:]
+        end_index = url.find("/", start_index + 3)
+        truncated_url = url[start_index + 3:end_index] if end_index > 0 else url[start_index + 3:]
+
+    return truncated_url
+
 def load(url, output):
-    output_for_url = os.path.join(args.output, url)
-    if not os.path.exists(output_for_url):
-        os.makedirs(output_for_url)
+    trace_output = os.path.join(args.output, truncate_url(url, True))
+    # if not os.path.exists(output_for_url):
+    #     os.makedirs(output_for_url)
 
     # trial = f"run-0"
     # while os.path.exists(os.path.join(output_for_url, trial)):
     #     (_, number) = trial.rsplit("-", 1)
     #     trial = f"run-{int(number) + 1}"
     # output_trial = os.path.abspath(os.path.join(output_for_url, trial))
-    
-    commands = ["mm-webrecord", output_for_url, "chrome/linux-128.0.6613.84/chrome-linux64/chrome",
-                "--disable-fre", "--no-default-browser-check", "--no-first-run", "--window-size=1920,1080",
-                "--ignore-certificate-errors", "--user-data-dir=/tmp/nonexistent$(date +%s%N)", url]
-    p = subprocess.Popen(commands, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # url = "https://www.amazon.com/JavaScript-Definitive-Most-Used-Programming-Language/dp/1491952024/"
+    # url = "https://fastcampus.co.kr/"
+    tick = 0
+    # commands = [f"mm-webrecord", output_for_url, "../chrome/linux-128.0.6613.84/chrome-linux64/chrome",
+    #             "--disable-fre", "--no-default-browser-check", "--no-first-run", "--window-size=1920,1080",
+    #             "--ignore-certificate-errors", "--user-data-dir=/tmp/nonexistent$(date +%%s%%N)", url]
+    # commands = ["node", "../index.js", url]
+    commands = ["mm-webrecord", trace_output, "node", "../record.js", "https://" + truncate_url(url, False)]
+    # commands = ["mm-webrecord", trace_output, "node", "../record.js", "https://www.nytimes.com/"]
+    # p = subprocess.Popen(commands, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    p = subprocess.Popen(commands)
+    # p = subprocess.Popen(commands, shell=True)
+
     try:
         out, err = p.communicate(timeout=args.timeout)
     except:
@@ -36,7 +60,7 @@ def load(url, output):
 
         return 2
 
-    if os.path.exists(os.path.join(output_for_url, f"{url}.json")):
+    if os.path.exists(os.path.join(trace_output, f"{url}.json")):
         return 0
     else:
         return 1
@@ -66,4 +90,4 @@ if __name__ == "__main__":
                 # print(load_single(tokens[1]))
     
                 print(tokens[0], end=" ")
-                print(load_single(tokens[0]))
+                print(load(tokens[0], args.output))

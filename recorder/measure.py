@@ -6,17 +6,30 @@ import subprocess
 import argparse
 import id
 
+def truncate_url(url, truncate_path):
+    start_index = url.find("://")
+    if start_index == -1:
+        if not truncate_path:
+            return url
+        end_index = url.find("/")
+        truncated_url = url[:end_index] if end_index > 0 else url
+    else:
+        if not truncate_path:
+            return url[start_index + 3:]
+        end_index = url.find("/", start_index + 3)
+        truncated_url = url[start_index + 3:end_index] if end_index > 0 else url[start_index + 3:]
+
+    return truncated_url
+
 def load(url, output):
-    output_for_url = os.path.join(args.output, url)
-    url = "https://" + url
-    print(output_for_url)
-    
+    trace_output = os.path.join(args.output, truncate_url(url, True))
+
     tick = 0
-    commands = ["mm-webreplay", output_for_url, "node", "../measure.js", url]
+    commands = ["mm-webreplay", trace_output, "node", "../measure.js", "https://" + truncate_url(url, False)]
     p = subprocess.Popen(commands)
 
     try:
-        out, err = p.communicate(timeout=args.timeout)
+        out, err = p.communicate(timeout=int(args.timeout))
     except:
         p.kill()
         first_commands = ["ps", "-eo", "pid,args"]
@@ -30,7 +43,7 @@ def load(url, output):
 
         return 2
 
-    if os.path.exists(os.path.join(output_for_url, f"{url}.json")):
+    if os.path.exists(os.path.join(trace_output, f"{url}.json")):
         return 0
     else:
         return 1
