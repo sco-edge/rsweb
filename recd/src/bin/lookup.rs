@@ -34,7 +34,9 @@ fn main() {
 
     for trace in traces.read_dir().unwrap() {
         if let Ok(trace) = trace {
+            println!("{}", trace.path().file_name().unwrap().to_string_lossy());
             recd::resource::read_trace(&trace.path());
+            println!();
         }
     }
 }

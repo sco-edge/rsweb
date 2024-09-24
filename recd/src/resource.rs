@@ -8,11 +8,13 @@ use std::cmp;
 use std::collections::HashMap;
 use std::fmt;
 use std::str;
+use std::io::{Read, Cursor};
 
 use url;
 use url::Url;
 
 use protobuf::Message;
+use flate2::read::GzDecoder;
 
 /// A trait for types with associated string name and value.
 pub trait NameValue {
@@ -221,7 +223,7 @@ pub fn read_trace(trace: &Path) {
         }
     }
     let request_items = request_first_line.split(' ').collect::<Vec<_>>();
-    // println!("{} {}{}", request_items[0], host.unwrap(), request_items[1]);
+    println!("{} {}{}", request_items[0], host.unwrap(), request_items[1]);
 
     let response = content.get_response();
     let response_first_line =
@@ -234,19 +236,38 @@ pub fn read_trace(trace: &Path) {
     for header in headers {
         let key = String::from_utf8_lossy(header.get_key()).into_owned();
         let value = String::from_utf8_lossy(header.get_value()).into_owned();
+        // println!("{} {}", key, value);
         if key.to_lowercase() == "content-encoding" {
             encoding = Some(value);
         } else if key.to_lowercase() == "content-type" {
             content_type = Some(value);
         }
-        println!("{}", key);
     }
     let body = Vec::from(response.get_body());
 
-    // match encoding {
-    //     Some(v) => println!("{} {} {}", status, v, body.len()),
-    //     None => println!("{} None {}", status, body.len()),
-    // }
+    match content_type {
+        Some(c) => {
+            match encoding {
+                Some(v) => println!("{} {} {} {}", status, c, v, body.len()),
+                None => println!("{} {} None {}", status, c, body.len()),
+            }
+        }
+        None => {
+            match encoding {
+                Some(v) => println!("{} None {} {}", status, v, body.len()),
+                None => println!("{} None None {}", status, body.len()),
+            }
+        }
+    }
+    
+    if request_items[1] == "/vp/products/7371286189/items/19015299249/vendorItemIds/86139865807/bottom-ads-carousel-widget" {
+        let cursor = Cursor::new(body);
+        let mut decoder = GzDecoder::new(cursor);
+        let mut decompressed_data = String::new();
+        
+        decoder.read_to_string(&mut decompressed_data).unwrap();
+        println!("{}", decompressed_data);
+    }
 
 }
 
