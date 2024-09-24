@@ -6,7 +6,7 @@ const { exit } = require('process');
 const speedline = require('speedline');
 
 var target = process.argv[2]
-var viewport = { width: 1920, height: 1080 };
+var viewport = { width: 1920, height: 6866 };
 var dependency_out_filename = "output.json";
 var cost_gain_filename = "cost.json";
 
@@ -42,8 +42,14 @@ var trace_path = "trace.json";
 
         // page.on('console', (msg) => console[msg._type]('PAGE LOG:', msg._text));
 
-        await page.goto(url, { waitUntil: 'networkidle0' });
+        await page.goto(url, { waitUntil: 'networkidle2' });
         await delay(1000);
+
+        // const elem = await page.$('container');
+        // const boundingBox = await elem.boundingBox();
+        // console.log('boundingBox', boundingBox)
+
+        console.log(await page.evaluate(() => document.body.scrollHeight));
 
         try {
             await page.tracing.stop();
@@ -51,13 +57,14 @@ var trace_path = "trace.json";
             console.log(error);
         }
 
-        results = await speedline(trace_path, {include: 'speedIndex'});
-        console.log(results.speedIndex);
+        results = await speedline(trace_path, {include: 'all'});
+        // console.log(results.speedIndex);
+        console.log(results);
         fs.writeFileSync('TRACE_OK', results.speedIndex.toString());
 
         await page.close();
         await browser.close();
-        fs.unlinkSync(trace_path);
+        // fs.unlinkSync(trace_path);
 
         process.exit(0);
     } catch (error) {
